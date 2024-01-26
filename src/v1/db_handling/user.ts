@@ -10,7 +10,7 @@ import { createToken, deleteToken, validToken } from "./db_handler.ts";
 
 // Login, create token, return token
 export async function login(db: Db, userName: string|null, email: string|null, password: string) {
-	// Create query dependiong on which parameter is given
+	// Create query depending on which parameter is given
     let query: object;
     if (userName) {
 		query = {userName: {$eq: userName}};

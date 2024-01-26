@@ -9,8 +9,7 @@ import { Db, MongoClient, ObjectId } from "mongodb";
 // Create connection to database
 export function connect(uri: string) {
 	const client = new MongoClient(uri);
-	const db = client.db("school-chat");
-	return db;
+	return client.db("school-chat");
 }
 
 
@@ -36,6 +35,5 @@ export async function createToken(db: Db, user: ObjectId) {
 export async function deleteToken(db: Db, token: ObjectId) {
 	let collection = db.collection("tokens");
 	
-	let result = await collection.findOneAndDelete({_id: {$eq: token}});
-	return result;
+	return await collection.findOneAndDelete({_id: {$eq: token}});
 }
