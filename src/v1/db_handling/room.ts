@@ -45,6 +45,50 @@ export async function createRoom(db: Db, token: ObjectId, userId: ObjectId, room
 }
 
 
+// Delete room
+export async function deleteRoom(db: Db, token: ObjectId, userId: ObjectId, roomId: ObjectId) {
+    // Check if token is valid
+    if (!(await validToken(db, token, userId))) {
+        return {
+            success: false,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Check if user is owner of the room
+    let collection = db.collection("rooms");
+    let findResponse = await collection.findOne({ _id: {$eq: roomId} });
+
+    if (!findResponse) {
+        return {
+            success: false,
+            status: StatusCodes.NOT_FOUND
+        }
+    }
+
+    if (findResponse.owner != userId) {
+        return {
+            success: false,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Delete room
+    let deleteResponse = await collection.deleteOne({ _id: {$eq: roomId} });
+    if (!deleteResponse.acknowledged) {
+        return {
+            success: false,
+            status: StatusCodes.INTERNAL_SERVER_ERROR
+        }
+    }
+
+    return {
+        success: true,
+        status: StatusCodes.OK
+    }
+}
+
+
 // Get room info
 export async function getRoomInfo(db: Db, token: ObjectId, userId: ObjectId, roomId: ObjectId) {
     // Check if token is valid
@@ -88,10 +132,20 @@ export async function addUser(db: Db, token: ObjectId, userId: ObjectId, roomId:
         }
     }
 
-    // Check if room exists
-    let collection = db.collection("rooms");
+    // Check if user exists
+    let collection = db.collection("users");
+    let findResult = await collection.findOne({ _id: targetId });
+    if (!findResult) {
+        return {
+            success: false,
+            status: StatusCodes.NOT_FOUND
+        }
+    }
 
-    let findResult = await collection.findOne({ _id: {$eq: roomId} });
+    // Check if room exists
+    collection = db.collection("rooms");
+
+    findResult = await collection.findOne({ _id: {$eq: roomId} });
     if (!findResult) {
         return {
             success: false,
@@ -120,7 +174,7 @@ export async function addUser(db: Db, token: ObjectId, userId: ObjectId, roomId:
     if (updateResult.acknowledged) {
         return {
             success: true,
-            status: StatusCodes.CREATED
+            status: StatusCodes.OK
         }
     } else {
         return {
@@ -222,26 +276,32 @@ export async function kickUser(db: Db, token: ObjectId, userId: ObjectId, roomId
     }
 
     // Check if target is admin (only owner can kick admins)
-    if (findResult.admins.includes(targetId)) {
-        if (findResult.owner == userId) {
-            let updateResult = await collection.updateOne({ _id: {$eq: roomId} }, { $pull: {admins: {$eq: targetId}} });
-            if (!updateResult.acknowledged) {
-                return {
-                    success: false,
-                    status: StatusCodes.INTERNAL_SERVER_ERROR
-                }
-            }
-        } else {
-            return {
-                success: false,
-                status: StatusCodes.UNAUTHORIZED
-            }
-        }
-    } else {
+    if (!findResult.admins.includes(targetId)) {
         return {
             success: false,
             status: StatusCodes.INTERNAL_SERVER_ERROR
         }
+    }
+
+    if (findResult.owner != userId) {
+        return {
+            success: false,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Remove member from room
+    let updateResult = await collection.updateOne({ _id: {$eq: roomId} }, { $pull: {admins: {$eq: targetId}} });
+    if (!updateResult.acknowledged) {
+        return {
+            success: false,
+            status: StatusCodes.INTERNAL_SERVER_ERROR
+        }
+    }
+
+    return {
+        success: true,
+        status: StatusCodes.OK
     }
 }
 
@@ -402,7 +462,7 @@ export async function editMessage(db: Db, token: ObjectId, userId: ObjectId, roo
     // Edit message
     let contentsStr = "messages."+messageIndex+".contents";
     let editedStr = "messages."+messageIndex+".edited";
-    let updateResult = await collection.updateOne({ _id: {$eq: roomId} }, { $set: { contentsStr: newContents, editedStr: true } });
+    let updateResult = await collection.updateOne({ _id: {$eq: roomId} }, { $set: { [contentsStr]: newContents, [editedStr]: true } });
 
     if (updateResult.acknowledged) {
         return {
