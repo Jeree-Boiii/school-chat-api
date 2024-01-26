@@ -203,3 +203,159 @@ export async function removeStudent(db: Db, token: ObjectId, userId: ObjectId, c
         status: StatusCodes.OK
     }
 }
+
+
+// Create notice
+export async function createNotice(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId, title: string, description: string, dueDate: Date, image: string|null) {
+    // Check if token is valid
+    if (!(await validToken(db, token, userId))) {
+        return {
+            id: null,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Check if user is teacher of class
+    let collection = db.collection("classes");
+    let findResponse = await collection.findOne({_id: {$eq: classId}});
+
+    if (!findResponse) {
+        return {
+            id: null,
+            status: StatusCodes.NOT_FOUND
+        }
+    }
+
+    if (findResponse.teacher != userId) {
+        return {
+            id: null,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Create notice object to be inserted
+    let noticeId = new ObjectId();
+    let notice = {
+        _id: noticeId,
+        author: userId,
+        title: title,
+        description: description,
+        dueDate: dueDate,
+        image: image
+    }
+
+    // Insert notice
+    let updateResponse = await collection.updateOne({_id: {$eq: classId}}, {$push: {notices: notice}});
+
+    if (!updateResponse.acknowledged) {
+        return {
+            id: null,
+            status: StatusCodes.INTERNAL_SERVER_ERROR
+        }
+    }
+
+    return {
+        id: noticeId,
+        status: StatusCodes.CREATED
+    }
+}
+
+
+// Edit notice
+export async function editNotice(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId, noticeId: ObjectId, field: string, value: string|Date|null) {
+    // Check if token is valid
+    if (!(await validToken(db, token, userId))) {
+        return {
+            success: false,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Check if user is teacher of class
+    let collection = db.collection("classes");
+    let findResponse = await collection.findOne({_id: {$eq: classId}});
+
+    if (!findResponse) {
+        return {
+            success: false,
+            status: StatusCodes.NOT_FOUND
+        }
+    }
+
+    if (findResponse.teacher != userId) {
+        return {
+            success: false,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Check that notice exists
+    let noticeIndex = findResponse.notices.indexOf(noticeId);
+    if (noticeIndex == -1) {
+        return {
+            success: false,
+            status: StatusCodes.NOT_FOUND
+        }
+    }
+
+    // Update notice
+    let fieldStr = `notices.${noticeIndex}.${field}`;
+    let updateResponse = await collection.updateOne({ _id: { $eq: noticeId } }, { $set: { [fieldStr]: value} });
+
+    if (!updateResponse.acknowledged) {
+        return {
+            success: false,
+            status: StatusCodes.INTERNAL_SERVER_ERROR
+        }
+    }
+
+    return {
+        success: true,
+        status: StatusCodes.OK
+    }
+}
+
+
+// Delete notice
+export async function deleteNotice(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId, noticeId: ObjectId) {
+    // Check if token is valid
+    if (!(await validToken(db, token, userId))) {
+        return {
+            success: false,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Check if user is teacher of class
+    let collection = db.collection("classes");
+    let findResponse = await collection.findOne({_id: {$eq: classId}});
+
+    if (!findResponse) {
+        return {
+            success: false,
+            status: StatusCodes.NOT_FOUND
+        }
+    }
+
+    if (findResponse.teacher != userId) {
+        return {
+            success: false,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Delete notice
+    let updateResponse = await collection.updateOne({ _id: {$eq: classId} }, { $pull: { _id: {$eq: noticeId} } });
+
+    if (!updateResponse.acknowledged) {
+        return {
+            success: false,
+            status: StatusCodes.INTERNAL_SERVER_ERROR
+        }
+    }
+
+    return {
+        success: true,
+        status: StatusCodes.OK
+    }
+}
