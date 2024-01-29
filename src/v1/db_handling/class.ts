@@ -206,7 +206,7 @@ export async function removeStudent(db: Db, token: ObjectId, userId: ObjectId, c
 
 
 // Create notice
-export async function createNotice(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId, title: string, description: string, dueDate: Date, image: string|null) {
+export async function createNotice(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId, title: string, description: string, image: string|null) {
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -240,7 +240,6 @@ export async function createNotice(db: Db, token: ObjectId, userId: ObjectId, cl
         author: userId,
         title: title,
         description: description,
-        dueDate: dueDate,
         image: image
     }
 
@@ -262,7 +261,7 @@ export async function createNotice(db: Db, token: ObjectId, userId: ObjectId, cl
 
 
 // Edit notice
-export async function editNotice(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId, noticeId: ObjectId, field: string, value: string|Date|null) {
+export async function editNotice(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId, noticeId: ObjectId, field: string, value: string|null) {
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -290,7 +289,15 @@ export async function editNotice(db: Db, token: ObjectId, userId: ObjectId, clas
     }
 
     // Check that notice exists
-    let noticeIndex = findResponse.notices.indexOf(noticeId);
+    let noticeIndex = -1;
+
+    for (let i=0; i<findResponse.notices.length; i++) {
+        if (findResponse.notices[i] == noticeId) {
+            noticeIndex = i;
+            break;
+        }
+    }
+
     if (noticeIndex == -1) {
         return {
             success: false,
@@ -345,7 +352,171 @@ export async function deleteNotice(db: Db, token: ObjectId, userId: ObjectId, cl
     }
 
     // Delete notice
-    let updateResponse = await collection.updateOne({ _id: {$eq: classId} }, { $pull: { _id: {$eq: noticeId} } });
+    let updateResponse = await collection.updateOne({ _id: {$eq: classId} }, { $pull: { notices: { _id: {$eq: noticeId} } } });
+
+    if (!updateResponse.acknowledged) {
+        return {
+            success: false,
+            status: StatusCodes.INTERNAL_SERVER_ERROR
+        }
+    }
+
+    return {
+        success: true,
+        status: StatusCodes.OK
+    }
+}
+
+
+// Create assignment
+export async function createAssignment(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId, title: string, description: string, dueDate: Date, image: string|null) {
+    // Check if token is valid
+    if (!(await validToken(db, token, userId))) {
+        return {
+            id: null,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Check if user is teacher of class
+    let collection = db.collection("classes");
+    let findResponse = await collection.findOne({_id: {$eq: classId}});
+
+    if (!findResponse) {
+        return {
+            id: null,
+            status: StatusCodes.NOT_FOUND
+        }
+    }
+
+    if (findResponse.teacher != userId) {
+        return {
+            id: null,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Create assignment object to be inserted
+    let assignmentId = new ObjectId();
+    let assignment = {
+        _id: assignmentId,
+        author: userId,
+        title: title,
+        description: description,
+        dueDate: dueDate,
+        image: image
+    }
+
+    // Insert assignment
+    let updateResult = await collection.updateOne({ _id: {$eq: classId} }, { $push: {assignments: assignment} });
+
+    if (!updateResult.acknowledged) {
+        return {
+            id: null,
+            status: StatusCodes.INTERNAL_SERVER_ERROR
+        }
+    }
+
+    return {
+        id: assignmentId,
+        status: StatusCodes.CREATED
+    }
+}
+
+
+// Edit assignment
+export async function editAssignment(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId, assignmentId: ObjectId, field: string, value: string|Date|null) {
+    // Check if token is valid
+    if (!(await validToken(db, token, userId))) {
+        return {
+            success: false,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Check if user is teacher of class
+    let collection = db.collection("classes");
+    let findResponse = await collection.findOne({_id: {$eq: classId}});
+
+    if (!findResponse) {
+        return {
+            success: false,
+            status: StatusCodes.NOT_FOUND
+        }
+    }
+
+    if (findResponse.teacher != userId) {
+        return {
+            success: false,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Check if assignment exists
+    let assignmentIndex = -1;
+
+    for (let i=0; i<findResponse.assignments.length; i++) {
+        if (findResponse.assignments[i] == assignmentId) {
+            assignmentIndex = i;
+            break;
+        }
+    }
+
+    if (assignmentIndex == -1) {
+        return {
+            success: false,
+            status: StatusCodes.NOT_FOUND
+        }
+    }
+
+    // Edit assignment
+    let fieldStr = `assignments.${assignmentIndex}.${field}`
+    let updateResponse = await collection.updateOne({ _id: {$eq: classId} }, { $set: {[fieldStr]: value} });
+
+    if (!updateResponse.acknowledged) {
+        return {
+            success: false,
+            status: StatusCodes.INTERNAL_SERVER_ERROR
+        }
+    }
+
+    return {
+        success: true,
+        status: StatusCodes.OK
+    }
+}
+
+
+// Delete assignment
+export async function deleteAssignment(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId, assignmentId: ObjectId) {
+    // Check if token is valid
+    if (!(await validToken(db, token, userId))) {
+        return {
+            success: false,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Check if user is teacher of class
+    let collection = db.collection("classes");
+    let findResponse = await collection.findOne({_id: {$eq: classId}});
+
+    if (!findResponse) {
+        return {
+            success: false,
+            status: StatusCodes.NOT_FOUND
+        }
+    }
+
+    if (findResponse.teacher != userId) {
+        return {
+            success: false,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Delete assignment
+    let updateResponse = await collection.updateOne({ _id: {$eq: classId} }, { $pull: { assignments: { _id: {$eq: assignmentId} } } });
 
     if (!updateResponse.acknowledged) {
         return {
