@@ -20,7 +20,7 @@ export async function login(db: Db, userName: string|null, email: string|null, p
 		return {
             token: null,
             status: StatusCodes.NOT_ACCEPTABLE
-        };
+        }
 	}
 
     // Send + process request
@@ -37,7 +37,7 @@ export async function login(db: Db, userName: string|null, email: string|null, p
         return {
             token: null,
             status: StatusCodes.UNAUTHORIZED
-        };
+        }
     }
 }
 
@@ -57,12 +57,12 @@ export async function logout(db: Db, token: ObjectId, userId: ObjectId) {
         return {
             success: true,
             status: StatusCodes.OK
-        };
+        }
     } else {
         return {
             success: false,
             status: StatusCodes.UNAUTHORIZED
-        };
+        }
     }
 }
 
@@ -90,7 +90,7 @@ export async function createUser(db: Db, userName: string, realName: string, ema
         form: { year: year, classLetter: classLetter },
         classes: [],
         rooms: []
-    };
+    }
 
     // Insert user into database
     let insertResult = await collection.insertOne(user);
