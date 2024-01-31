@@ -5,7 +5,7 @@
 // Imports
 import { Db, ObjectId } from "mongodb";
 import { StatusCodes } from "http-status-codes";
-import { createToken, deleteToken, validToken } from "./db_handler.ts";
+import { createToken, deleteToken, validToken } from "./db_handler";
 
 
 // Login, create token, return token
@@ -75,7 +75,7 @@ export async function createUser(db: Db, userName: string, realName: string, ema
     let findResult = await collection.findOne({ $or: [ {userName: {$eq: userName}}, {email: {$eq: email}} ] })
     if (findResult) {
         return {
-            created: false,
+            id: null,
             status: StatusCodes.CONFLICT
         }
     }
@@ -144,7 +144,7 @@ export async function deleteUser(db: Db, token: ObjectId, userId: ObjectId) {
 
 
 // Get user information
-export async function getUserInfo(db: Db, token: ObjectId, userId: ObjectId) {
+export async function getUserInfo(db: Db, token: ObjectId, userId: ObjectId, targetId: ObjectId) {
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -155,7 +155,7 @@ export async function getUserInfo(db: Db, token: ObjectId, userId: ObjectId) {
 
     // Get user
     let collection = db.collection("users");
-    let result = await collection.findOne({ _id: {$eq: userId} });
+    let result = await collection.findOne({ _id: {$eq: targetId} });
 
     if (!result) {
         return {

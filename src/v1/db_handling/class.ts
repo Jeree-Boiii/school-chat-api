@@ -5,7 +5,7 @@
 // Imports
 import { Db, ObjectId } from "mongodb";
 import { StatusCodes } from "http-status-codes";
-import { validToken } from "./db_handler.ts";
+import { validToken } from "./db_handler";
 
 
 // Create room
