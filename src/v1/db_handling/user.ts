@@ -27,18 +27,18 @@ export async function login(db: Db, userName: string|null, email: string|null, p
 	let collection = db.collection("users");
 	
     let result = await collection.findOne(query);
-    if (result && result.password == password) {
-        let token = await createToken(db, result._id);
-        return {
-            token: token,
-            status: StatusCodes.CREATED
-        };
-    } else {
+    if (!(result && result.password == password)) {
         return {
             token: null,
             status: StatusCodes.UNAUTHORIZED
         }
     }
+
+    let token = await createToken(db, result._id);
+    return {
+        token: token,
+        status: StatusCodes.CREATED
+    };
 }
 
 
@@ -53,16 +53,16 @@ export async function logout(db: Db, token: ObjectId, userId: ObjectId) {
     }
     
     // Delete token
-    if (await deleteToken(db, token)) {
-        return {
-            success: true,
-            status: StatusCodes.OK
-        }
-    } else {
+    if (!(await deleteToken(db, token))) {
         return {
             success: false,
             status: StatusCodes.UNAUTHORIZED
         }
+    }
+
+    return {
+        success: true,
+        status: StatusCodes.OK
     }
 }
 
@@ -94,16 +94,16 @@ export async function createUser(db: Db, userName: string, realName: string, ema
 
     // Insert user into database
     let insertResult = await collection.insertOne(user);
-    if (insertResult.acknowledged) {
-        return {
-            id: insertResult.insertedId,
-            status: StatusCodes.CREATED
-        }
-    } else {
+    if (!insertResult.acknowledged) {
         return {
             id: null,
             status: StatusCodes.INTERNAL_SERVER_ERROR
         }
+    }
+
+    return {
+        id: insertResult.insertedId,
+        status: StatusCodes.CREATED
     }
 }
 
@@ -119,26 +119,27 @@ export async function deleteUser(db: Db, token: ObjectId, userId: ObjectId) {
     }
 
     // Logout the user before deletion
-    if (!(await logout(db, token, userId)).success) {
+    let logoutResponse = await logout(db, token, userId);
+    if (!logoutResponse.success) {
         return {
             success: false,
-            status: StatusCodes.INTERNAL_SERVER_ERROR
+            status: logoutResponse.status
         }
     }
 
     // Delete user
     let collection = db.collection("users");
     let result = await collection.findOneAndDelete({ _id: {$eq: userId} });
-    if (result) {
-        return {
-            success: true,
-            status: StatusCodes.OK
-        }
-    } else {
+    if (!result) {
         return {
             success: false,
             status: StatusCodes.INTERNAL_SERVER_ERROR
         }
+    }
+
+    return {
+        success: true,
+        status: StatusCodes.OK
     }
 }
 
