@@ -18,7 +18,7 @@ export async function validToken(db: Db, token: ObjectId, user: ObjectId) {
 	let collection = db.collection("tokens");
 
 	let result = await collection.findOne({_id: {$eq: token}});
-	return result && result.user == user;
+	return user.equals(result?.user);
 }
 
 
