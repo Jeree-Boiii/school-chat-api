@@ -17,8 +17,8 @@ module.exports = function(app: Express, db: Db) {
     // --> year: number
     // --> classLetter: string
     // Returns
-    // --> id: ObjectId   | ID of inserted user
-    // --> status: number | HTTP Status Code
+    // --> id: string (valid ObjectId)   | ID of inserted user
+    // --> status: number                | HTTP Status Code
     app.post("/users", async (req, res) => {
         // Get + parse parameters
         let rawParams = req.query.params?.toString();
@@ -39,13 +39,13 @@ module.exports = function(app: Express, db: Db) {
     // GET: /users
     // Get information about user
     // REQUIRES TOKEN
-    // --> token: ObjectId
-    // --> userId: ObjectId
+    // --> token: string (valid ObjectId)
+    // --> userId: string (valid ObjectId)
     // Parameters:
-    // --> targetId: ObjectId | ID of user being searched for
+    // --> targetId: string (valid ObjectId) | ID of user being searched for
     // Returns:
-    // --> user: {}           | Information about user
-    // --> status: number     | HTTP Status Code
+    // --> user: {}                          | Information about user
+    // --> status: number                    | HTTP Status Code
     app.get("/users", async (req, res) => {
         // Get + parse token
         let rawToken = req.query.token?.toString();
@@ -96,8 +96,8 @@ module.exports = function(app: Express, db: Db) {
     // POST: /users/logout
     // Logout user
     // REQUIRES TOKEN
-    // --> token: ObjectId
-    // --> userId: ObjectId
+    // --> token: string (valid ObjectId)
+    // --> userId: string (valid ObjectId)
     // Parameters:
     // --> N/A
     app.post("/users/logout", async (req, res) => {
@@ -119,8 +119,8 @@ module.exports = function(app: Express, db: Db) {
     // POST: /users/delete
     // Delete user
     // REQUIRES TOKEN
-    // --> token: ObjectId
-    // --> userId: ObjectId
+    // --> token: string (valid ObjectId)
+    // --> userId: string (valid ObjectId)
     // Parameters:
     // --> N/A
     app.post("users/delete", async (req, res) => {
