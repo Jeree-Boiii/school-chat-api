@@ -9,7 +9,11 @@ import { validToken } from "./db_handler";
 
 
 // Create room
-export async function createClass(db: Db, token: ObjectId, userId: ObjectId, className: string) {
+export async function createClass(db: Db, tokenRaw: string, userIdRaw: string, className: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -22,7 +26,13 @@ export async function createClass(db: Db, token: ObjectId, userId: ObjectId, cla
     let collection = db.collection("users");
 
     let find_response = await collection.findOne(userId);
-    if (!find_response || !find_response.teacher) {
+    if (!find_response) {
+        return {
+            id: null,
+            status: StatusCodes.INTERNAL_SERVER_ERROR
+        }
+    }
+    if (!find_response.teacher) {
         return {
             id: null,
             status: StatusCodes.UNAUTHORIZED
@@ -57,7 +67,12 @@ export async function createClass(db: Db, token: ObjectId, userId: ObjectId, cla
 
 
 // Get information about class
-export async function getClassInfo(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId) {
+export async function getClassInfo(db: Db, tokenRaw: string, userIdRaw: string, classIdRaw: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let classId = new ObjectId(classIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -89,7 +104,13 @@ export async function getClassInfo(db: Db, token: ObjectId, userId: ObjectId, cl
 
 
 // Add student to class
-export async function addStudent(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId, targetId: ObjectId) {
+export async function addStudent(db: Db, tokenRaw: string, userIdRaw: string, classIdRaw: string, targetIdRaw: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let classId = new ObjectId(classIdRaw);
+    let targetId = new ObjectId(targetIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -130,12 +151,14 @@ export async function addStudent(db: Db, token: ObjectId, userId: ObjectId, clas
     }
 
     // Check that target isn't already part of class
-    if (findResponse.students.includes(targetId)) {
-        return {
-            success: false,
-            status: StatusCodes.CONFLICT
+    findResponse.students.forEach((student: ObjectId) => {
+        if (targetId.equals(student)) {
+            return {
+                success: false,
+                status: StatusCodes.CONFLICT
+            }
         }
-    }
+    })
 
     // Add target to students
     let updateResult = await collection.updateOne({ _id: { $eq: classId } }, { $push: { students: targetId} });
@@ -154,7 +177,13 @@ export async function addStudent(db: Db, token: ObjectId, userId: ObjectId, clas
 
 
 // Remove student from class
-export async function removeStudent(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId, targetId: ObjectId) {
+export async function removeStudent(db: Db, tokenRaw: string, userIdRaw: string, classIdRaw: string, targetIdRaw: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let classId = new ObjectId(classIdRaw);
+    let targetId = new ObjectId(targetIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -174,7 +203,7 @@ export async function removeStudent(db: Db, token: ObjectId, userId: ObjectId, c
         }
     }
 
-    if (findResponse.teacher != userId) {
+    if (!userId.equals(findResponse.teacher)) {
         return {
             success: false,
             status: StatusCodes.UNAUTHORIZED
@@ -182,7 +211,11 @@ export async function removeStudent(db: Db, token: ObjectId, userId: ObjectId, c
     }
 
     // Check if target is student in class
-    if (!findResponse.students.includes(targetId)) {
+    let targetIsStudent = false;
+    findResponse.students.forEach((student: ObjectId) => {
+        if (targetId.equals(student)) targetIsStudent = true;
+    })
+    if (!targetIsStudent) {
         return {
             success: false,
             status: StatusCodes.CONFLICT
@@ -206,7 +239,12 @@ export async function removeStudent(db: Db, token: ObjectId, userId: ObjectId, c
 
 
 // Create notice
-export async function createNotice(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId, title: string, description: string, image: string|null) {
+export async function createNotice(db: Db, tokenRaw: string, userIdRaw: string, classIdRaw: string, title: string, description: string, image: string|null) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let classId = new ObjectId(classIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -226,7 +264,7 @@ export async function createNotice(db: Db, token: ObjectId, userId: ObjectId, cl
         }
     }
 
-    if (findResponse.teacher != userId) {
+    if (!userId.equals(findResponse.teacher)) {
         return {
             id: null,
             status: StatusCodes.UNAUTHORIZED
@@ -261,7 +299,13 @@ export async function createNotice(db: Db, token: ObjectId, userId: ObjectId, cl
 
 
 // Edit notice
-export async function editNotice(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId, noticeId: ObjectId, field: string, value: string|null) {
+export async function editNotice(db: Db, tokenRaw: string, userIdRaw: string, classIdRaw: string, noticeIdRaw: string, field: string, value: string|null) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let classId = new ObjectId(classIdRaw);
+    let noticeId = new ObjectId(noticeIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -281,7 +325,7 @@ export async function editNotice(db: Db, token: ObjectId, userId: ObjectId, clas
         }
     }
 
-    if (findResponse.teacher != userId) {
+    if (!userId.equals(findResponse.teacher)) {
         return {
             success: false,
             status: StatusCodes.UNAUTHORIZED
@@ -292,7 +336,7 @@ export async function editNotice(db: Db, token: ObjectId, userId: ObjectId, clas
     let noticeIndex = -1;
 
     for (let i=0; i<findResponse.notices.length; i++) {
-        if (findResponse.notices[i] == noticeId) {
+        if (noticeId.equals(findResponse.notices[i])) {
             noticeIndex = i;
             break;
         }
@@ -324,7 +368,13 @@ export async function editNotice(db: Db, token: ObjectId, userId: ObjectId, clas
 
 
 // Delete notice
-export async function deleteNotice(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId, noticeId: ObjectId) {
+export async function deleteNotice(db: Db, tokenRaw: string, userIdRaw: string, classIdRaw: string, noticeIdRaw: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let classId = new ObjectId(classIdRaw);
+    let noticeId = new ObjectId(noticeIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -344,7 +394,7 @@ export async function deleteNotice(db: Db, token: ObjectId, userId: ObjectId, cl
         }
     }
 
-    if (findResponse.teacher != userId) {
+    if (userId.equals(findResponse.teacher)) {
         return {
             success: false,
             status: StatusCodes.UNAUTHORIZED
@@ -369,7 +419,12 @@ export async function deleteNotice(db: Db, token: ObjectId, userId: ObjectId, cl
 
 
 // Create assignment
-export async function createAssignment(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId, title: string, description: string, dueDate: Date, image: string|null) {
+export async function createAssignment(db: Db, tokenRaw: string, userIdRaw: string, classIdRaw: string, title: string, description: string, dueDate: Date, image: string|null) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let classId = new ObjectId(classIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -389,7 +444,7 @@ export async function createAssignment(db: Db, token: ObjectId, userId: ObjectId
         }
     }
 
-    if (findResponse.teacher != userId) {
+    if (!userId.equals(findResponse.teacher)) {
         return {
             id: null,
             status: StatusCodes.UNAUTHORIZED
@@ -425,7 +480,13 @@ export async function createAssignment(db: Db, token: ObjectId, userId: ObjectId
 
 
 // Edit assignment
-export async function editAssignment(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId, assignmentId: ObjectId, field: string, value: string|Date|null) {
+export async function editAssignment(db: Db, tokenRaw: string, userIdRaw: string, classIdRaw: string, assignmentIdRaw: string, field: string, value: string|Date|null) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let classId = new ObjectId(classIdRaw);
+    let assignmentId = new ObjectId(assignmentIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -445,7 +506,7 @@ export async function editAssignment(db: Db, token: ObjectId, userId: ObjectId, 
         }
     }
 
-    if (findResponse.teacher != userId) {
+    if (!userId.equals(findResponse.teacher)) {
         return {
             success: false,
             status: StatusCodes.UNAUTHORIZED
@@ -456,7 +517,7 @@ export async function editAssignment(db: Db, token: ObjectId, userId: ObjectId, 
     let assignmentIndex = -1;
 
     for (let i=0; i<findResponse.assignments.length; i++) {
-        if (findResponse.assignments[i] == assignmentId) {
+        if (assignmentId.equals(findResponse.assignments[i])) {
             assignmentIndex = i;
             break;
         }
@@ -488,7 +549,13 @@ export async function editAssignment(db: Db, token: ObjectId, userId: ObjectId, 
 
 
 // Delete assignment
-export async function deleteAssignment(db: Db, token: ObjectId, userId: ObjectId, classId: ObjectId, assignmentId: ObjectId) {
+export async function deleteAssignment(db: Db, tokenRaw: string, userIdRaw: string, classIdRaw: string, assignmentIdRaw: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let classId = new ObjectId(classIdRaw);
+    let assignmentId = new ObjectId(assignmentIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -508,7 +575,7 @@ export async function deleteAssignment(db: Db, token: ObjectId, userId: ObjectId
         }
     }
 
-    if (findResponse.teacher != userId) {
+    if (!userId.equals(findResponse.teacher)) {
         return {
             success: false,
             status: StatusCodes.UNAUTHORIZED
