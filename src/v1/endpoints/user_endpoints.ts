@@ -7,7 +7,7 @@ import * as User from "../db_handling/user";
 
 // Export module
 module.exports = function(app: Express, db: Db) {
-    // POST: /user
+    // POST: /users
     // Create user
     // Parameters:
     // --> userName: string
@@ -19,7 +19,7 @@ module.exports = function(app: Express, db: Db) {
     // Returns
     // --> id: ObjectId   | ID of inserted user
     // --> status: number | HTTP Status Code
-    app.post("/user", async (req, res) => {
+    app.post("/users", async (req, res) => {
         // Get + parse parameters
         let rawParams = req.query.params?.toString();
         if (rawParams == undefined) {
@@ -36,7 +36,7 @@ module.exports = function(app: Express, db: Db) {
     });
 
 
-    // GET: /user
+    // GET: /users
     // Get information about user
     // REQUIRES TOKEN
     // --> token: ObjectId
@@ -46,7 +46,7 @@ module.exports = function(app: Express, db: Db) {
     // Returns:
     // --> user: {}           | Information about user
     // --> status: number     | HTTP Status Code
-    app.get("/user", async (req, res) => {
+    app.get("/users", async (req, res) => {
         // Get + parse token
         let rawToken = req.query.token?.toString();
         if (rawToken == undefined) {
@@ -71,13 +71,13 @@ module.exports = function(app: Express, db: Db) {
     });
 
 
-    // POST: /user/login
+    // POST: /users/login
     // Login and get login token
     // Parameters:
     // --> userName: string|null
     // --> email: string|null
     // --> password: string
-    app.post("/user/login", async (req, res) => {
+    app.post("/users/login", async (req, res) => {
         // Get + parse parameters
         let rawParams = req.query.params?.toString();
         if (rawParams == undefined) {
@@ -93,14 +93,14 @@ module.exports = function(app: Express, db: Db) {
     });
 
 
-    // POST: /user/logout
+    // POST: /users/logout
     // Logout user
     // REQUIRES TOKEN
     // --> token: ObjectId
     // --> userId: ObjectId
     // Parameters:
     // --> N/A
-    app.post("/user/logout", async (req, res) => {
+    app.post("/users/logout", async (req, res) => {
         // Get + parse token
         let rawToken = req.query.token?.toString();
         if (rawToken == undefined) {
@@ -116,14 +116,14 @@ module.exports = function(app: Express, db: Db) {
     });
 
 
-    // POST: /user/delete
+    // POST: /users/delete
     // Delete user
     // REQUIRES TOKEN
     // --> token: ObjectId
     // --> userId: ObjectId
     // Parameters:
     // --> N/A
-    app.post("user/delete", async (req, res) => {
+    app.post("users/delete", async (req, res) => {
         // Get + parse token
         let rawToken = req.query.token?.toString();
         if (rawToken == undefined) {

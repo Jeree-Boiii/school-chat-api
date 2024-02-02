@@ -43,15 +43,19 @@ export async function login(db: Db, userName: string|null, email: string|null, p
 
 
 // Logout, delete token
-export async function logout(db: Db, token: ObjectId, userId: ObjectId) {
-     // Check if token is valid
+export async function logout(db: Db, tokenRaw: string, userIdRaw: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+
+    // Check if token is valid
      if (!(await validToken(db, token, userId))) {
         return {
             success: false,
             status: StatusCodes.UNAUTHORIZED
         }
     }
-    
+
     // Delete token
     if (!(await deleteToken(db, token))) {
         return {
@@ -109,7 +113,11 @@ export async function createUser(db: Db, userName: string, realName: string, ema
 
 
 // Delete user
-export async function deleteUser(db: Db, token: ObjectId, userId: ObjectId) {
+export async function deleteUser(db: Db, tokenRaw: string, userIdRaw: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -119,7 +127,7 @@ export async function deleteUser(db: Db, token: ObjectId, userId: ObjectId) {
     }
 
     // Logout the user before deletion
-    let logoutResponse = await logout(db, token, userId);
+    let logoutResponse = await logout(db, tokenRaw, userIdRaw);
     if (!logoutResponse.success) {
         return {
             success: false,
@@ -145,7 +153,12 @@ export async function deleteUser(db: Db, token: ObjectId, userId: ObjectId) {
 
 
 // Get user information
-export async function getUserInfo(db: Db, token: ObjectId, userId: ObjectId, targetId: ObjectId) {
+export async function getUserInfo(db: Db, tokenRaw: string, userIdRaw: string, targetIdRaw: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let targetId = new ObjectId(targetIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {

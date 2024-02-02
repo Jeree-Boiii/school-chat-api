@@ -9,7 +9,11 @@ import { validToken } from "./db_handler";
 
 
 // Create room
-export async function createRoom(db: Db, token: ObjectId, userId: ObjectId, roomName: string) {
+export async function createRoom(db: Db, tokenRaw: string, userIdRaw: string, roomName: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -46,7 +50,12 @@ export async function createRoom(db: Db, token: ObjectId, userId: ObjectId, room
 
 
 // Delete room
-export async function deleteRoom(db: Db, token: ObjectId, userId: ObjectId, roomId: ObjectId) {
+export async function deleteRoom(db: Db, tokenRaw: string, userIdRaw: string, roomIdRaw: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let roomId = new ObjectId(roomIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -66,7 +75,7 @@ export async function deleteRoom(db: Db, token: ObjectId, userId: ObjectId, room
         }
     }
 
-    if (findResponse.owner != userId) {
+    if (!userId.equals(findResponse.owner)) {
         return {
             success: false,
             status: StatusCodes.UNAUTHORIZED
@@ -90,7 +99,12 @@ export async function deleteRoom(db: Db, token: ObjectId, userId: ObjectId, room
 
 
 // Get room info
-export async function getRoomInfo(db: Db, token: ObjectId, userId: ObjectId, roomId: ObjectId) {
+export async function getRoomInfo(db: Db, tokenRaw: string, userIdRaw: string, roomIdRaw: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let roomId = new ObjectId(roomIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -123,7 +137,13 @@ export async function getRoomInfo(db: Db, token: ObjectId, userId: ObjectId, roo
 
 
 // Add user to room
-export async function addUser(db: Db, token: ObjectId, userId: ObjectId, roomId: ObjectId, targetId: ObjectId) {
+export async function addUser(db: Db, tokenRaw: string, userIdRaw: string, roomIdRaw: string, targetIdRaw: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let roomId = new ObjectId(roomIdRaw);
+    let targetId = new ObjectId(targetIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -154,20 +174,24 @@ export async function addUser(db: Db, token: ObjectId, userId: ObjectId, roomId:
     }
 
     // Check if user is admin
-    if (!findResult.admins.includes(userId)) {
-        return {
-            success: false,
-            status: StatusCodes.UNAUTHORIZED
+    findResult.admins.forEach((admin: ObjectId) => {
+        if (userId.equals(admin)) {
+            return {
+                success: false,
+                status: StatusCodes.UNAUTHORIZED
+            }
         }
-    }
+    })
 
     // Check if target is already in room
-    if (findResult.allMembers.includes(targetId)) {
-        return {
-            success: false,
-            status: StatusCodes.CONFLICT
+    findResult.allMembers.forEach((member: ObjectId) => {
+        if (userId.equals(member)) {
+            return {
+                success: false,
+                status: StatusCodes.CONFLICT
+            }
         }
-    }
+    })
 
     // Add target
     let updateResult = await collection.updateOne({ _id: { $eq: roomId } }, { $push: { members: targetId} });
@@ -186,7 +210,13 @@ export async function addUser(db: Db, token: ObjectId, userId: ObjectId, roomId:
 
 
 // Promote user to admin
-export async function promoteAdmin(db: Db, token: ObjectId, userId: ObjectId, roomId: ObjectId, targetId: ObjectId) {
+export async function promoteAdmin(db: Db, tokenRaw: string, userIdRaw: string, roomIdRaw: string, targetIdRaw: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let roomId = new ObjectId(roomIdRaw);
+    let targetId = new ObjectId(targetIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -207,7 +237,7 @@ export async function promoteAdmin(db: Db, token: ObjectId, userId: ObjectId, ro
     }
 
     // Check if user is owner
-    if (!(findResult.owner == userId)) {
+    if (!userId.equals(findResult.owner)) {
         return {
             success: false,
             status: StatusCodes.UNAUTHORIZED
@@ -215,12 +245,14 @@ export async function promoteAdmin(db: Db, token: ObjectId, userId: ObjectId, ro
     }
 
     // Check if target is already admin
-    if (findResult.admins.includes(targetId)) {
-        return {
-            success: false,
-            status: StatusCodes.CONFLICT
+    findResult.admins.forEach((admin: ObjectId) => {
+        if (targetId.equals(admin)) {
+            return {
+                success: false,
+                status: StatusCodes.CONFLICT
+            }
         }
-    }
+    })
 
     // Add target to admins
     let updateResult = await collection.updateOne({ _id: { $eq: roomId } }, { $push: { admins: targetId} });
@@ -239,7 +271,13 @@ export async function promoteAdmin(db: Db, token: ObjectId, userId: ObjectId, ro
 
 
 // Remove user from room
-export async function kickUser(db: Db, token: ObjectId, userId: ObjectId, roomId: ObjectId, targetId: ObjectId) {
+export async function kickUser(db: Db, tokenRaw: string, userIdRaw: string, roomIdRaw: string, targetIdRaw: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let roomId = new ObjectId(roomIdRaw);
+    let targetId = new ObjectId(targetIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -259,13 +297,20 @@ export async function kickUser(db: Db, token: ObjectId, userId: ObjectId, roomId
         }
     }
 
-    // Check if user is admin
-    if (!findResult.admins.includes(userId)) {
+    // Check if user is admin (also target for later)
+    let userIsAdmin = false;
+    let targetIsAdmin = false;
+    findResult.admins.forEach((admin: ObjectId) => {
+        if (userId.equals(admin)) userIsAdmin = true;
+        if (targetId.equals(admin)) targetIsAdmin = true;
+    })
+    if (!userIsAdmin) {
         return {
             success: false,
             status: StatusCodes.UNAUTHORIZED
         }
     }
+
 
     // Check if target is already in room
     if (!findResult.allMembers.includes(targetId)) {
@@ -276,14 +321,7 @@ export async function kickUser(db: Db, token: ObjectId, userId: ObjectId, roomId
     }
 
     // Check if target is admin (only owner can kick admins)
-    if (!findResult.admins.includes(targetId)) {
-        return {
-            success: false,
-            status: StatusCodes.INTERNAL_SERVER_ERROR
-        }
-    }
-
-    if (findResult.owner != userId) {
+    if (targetIsAdmin && !userId.equals(findResult.owner)) {
         return {
             success: false,
             status: StatusCodes.UNAUTHORIZED
@@ -307,7 +345,13 @@ export async function kickUser(db: Db, token: ObjectId, userId: ObjectId, roomId
 
 
 // Demote user from admin
-export async function demoteAdmin(db: Db, token: ObjectId, userId: ObjectId, roomId: ObjectId, targetId: ObjectId) {
+export async function demoteAdmin(db: Db, tokenRaw: string, userIdRaw: string, roomIdRaw: string, targetIdRaw: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let roomId = new ObjectId(roomIdRaw);
+    let targetId = new ObjectId(targetIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -328,7 +372,7 @@ export async function demoteAdmin(db: Db, token: ObjectId, userId: ObjectId, roo
     }
 
     // Check if user is owner
-    if (!(findResult.owner == userId)) {
+    if (!userId.equals(findResult.owner)) {
         return {
             success: false,
             status: StatusCodes.UNAUTHORIZED
@@ -336,7 +380,11 @@ export async function demoteAdmin(db: Db, token: ObjectId, userId: ObjectId, roo
     }
 
     // Check if target is already admin
-    if (!findResult.admins.includes(targetId)) {
+    let targetIsAdmin = false;
+    findResult.admins.forEach((admin: ObjectId) => {
+        if (targetId.equals(admin)) targetIsAdmin = true;
+    })
+    if (!targetIsAdmin) {
         return {
             success: false,
             status: StatusCodes.CONFLICT
@@ -360,7 +408,12 @@ export async function demoteAdmin(db: Db, token: ObjectId, userId: ObjectId, roo
 
 
 // Create new message
-export async function createMessage(db: Db, token: ObjectId, userId: ObjectId, roomId: ObjectId, contents: string, reply: ObjectId|null) {
+export async function createMessage(db: Db, tokenRaw: string, userIdRaw: string, roomIdRaw: string, contents: string, reply: ObjectId|null) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let roomId = new ObjectId(roomIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -381,10 +434,14 @@ export async function createMessage(db: Db, token: ObjectId, userId: ObjectId, r
     }
 
     // Check if user is member
-    if (!findResult.allMembers.includes(userId)) {
+    let isMember = false;
+    findResult.allMembers.forEach((member: ObjectId) => {
+        if (userId.equals(member)) isMember = true;
+    })
+    if (!isMember) {
         return {
             id: null,
-            status: StatusCodes.CONFLICT
+            status: StatusCodes.UNAUTHORIZED
         }
     }
 
@@ -415,7 +472,13 @@ export async function createMessage(db: Db, token: ObjectId, userId: ObjectId, r
 
 
 // Edit message
-export async function editMessage(db: Db, token: ObjectId, userId: ObjectId, roomId: ObjectId, messageId: ObjectId, newContents: ObjectId) {
+export async function editMessage(db: Db, tokenRaw: string, userIdRaw: string, roomIdRaw: string, messageIdRaw: string, newContents: ObjectId) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let roomId = new ObjectId(roomIdRaw);
+    let messageId = new ObjectId(messageIdRaw);
+
     // Check if token is valid
     if (!(await validToken(db, token, userId))) {
         return {
@@ -435,18 +498,10 @@ export async function editMessage(db: Db, token: ObjectId, userId: ObjectId, roo
         }
     }
 
-    // Check if user is member
-    if (!findResult.allMembers.includes(userId)) {
-        return {
-            success: false,
-            status: StatusCodes.CONFLICT
-        }
-    }
-
-    // Check if message exists
+    // Check if message exists and user is the author
     let messageIndex = -1;
     for (let i=0; i<findResult.messages.length; i++) {
-        if (messageId == findResult.messages[i]._id) {
+        if (messageId.equals(findResult.messages[i]._id) && userId.equals(findResult.messages[i].author)) {
             messageIndex = i;
             break;
         }
