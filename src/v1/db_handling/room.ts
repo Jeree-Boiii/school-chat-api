@@ -271,7 +271,7 @@ export async function promoteAdmin(db: Db, tokenRaw: string, userIdRaw: string, 
 
 
 // Remove user from room
-export async function kickUser(db: Db, tokenRaw: string, userIdRaw: string, roomIdRaw: string, targetIdRaw: string) {
+export async function removeUser(db: Db, tokenRaw: string, userIdRaw: string, roomIdRaw: string, targetIdRaw: string) {
     // Convert strings to ObjectIds
     let token = new ObjectId(tokenRaw);
     let userId = new ObjectId(userIdRaw);
@@ -304,7 +304,7 @@ export async function kickUser(db: Db, tokenRaw: string, userIdRaw: string, room
         if (userId.equals(admin)) userIsAdmin = true;
         if (targetId.equals(admin)) targetIsAdmin = true;
     })
-    if (!userIsAdmin) {
+    if (!userIsAdmin && !userId.equals(targetId)) {
         return {
             success: false,
             status: StatusCodes.UNAUTHORIZED
@@ -313,7 +313,11 @@ export async function kickUser(db: Db, tokenRaw: string, userIdRaw: string, room
 
 
     // Check if target is already in room
-    if (!findResult.allMembers.includes(targetId)) {
+    let targetIsUser = false;
+    findResult.allMembers.forEach((member) => {
+        if (targetId.equals(member)) targetIsUser = true;
+    })
+    if (!targetIsUser) {
         return {
             success: false,
             status: StatusCodes.CONFLICT
@@ -321,7 +325,7 @@ export async function kickUser(db: Db, tokenRaw: string, userIdRaw: string, room
     }
 
     // Check if target is admin (only owner can kick admins)
-    if (targetIsAdmin && !userId.equals(findResult.owner)) {
+    if (targetIsAdmin && !userId.equals(findResult.owner) && !userId.equals(targetId)) {
         return {
             success: false,
             status: StatusCodes.UNAUTHORIZED
@@ -371,8 +375,8 @@ export async function demoteAdmin(db: Db, tokenRaw: string, userIdRaw: string, r
         }
     }
 
-    // Check if user is owner
-    if (!userId.equals(findResult.owner)) {
+    // Check if user is owner OR user is demoting themselves
+    if (!userId.equals(findResult.owner) && !userId.equals(targetId)) {
         return {
             success: false,
             status: StatusCodes.UNAUTHORIZED
