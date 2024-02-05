@@ -349,7 +349,7 @@ export async function createNotice(db: Db, tokenRaw: string, userIdRaw: string, 
 
 
 // Edit notice
-export async function editNotice(db: Db, tokenRaw: string, userIdRaw: string, classIdRaw: string, noticeIdRaw: string, field: string, value: string|null) {
+export async function editNotice(db: Db, tokenRaw: string, userIdRaw: string, classIdRaw: string, noticeIdRaw: string, newTitle: string|null, newDescription: string|null, newImage: string|null) {
     // Convert strings to ObjectIds
     let token = new ObjectId(tokenRaw);
     let userId = new ObjectId(userIdRaw);
@@ -400,8 +400,12 @@ export async function editNotice(db: Db, tokenRaw: string, userIdRaw: string, cl
     }
 
     // Update notice
-    let fieldStr = `notices.${noticeIndex}.${field}`;
-    let updateResponse = await collection.updateOne({ _id: { $eq: noticeId } }, { $set: { [fieldStr]: value} });
+    let updateParams: {[index: string]: any} = {};
+    if (newTitle) updateParams[`notices.${noticeIndex}.title`] = newTitle;
+    if (newDescription) updateParams[`notices.${noticeIndex}.description`] = newDescription;
+    if (newImage) updateParams[`notices.${noticeIndex}.title`] = newImage;
+
+    let updateResponse = await collection.updateOne({ _id: { $eq: noticeId } }, { $set: updateParams });
 
     if (!updateResponse.acknowledged) {
         return {
