@@ -54,7 +54,7 @@ export async function createClass(db: Db, tokenRaw: string, userIdRaw: string, c
 
     if (insertResponse.acknowledged) {
         return {
-            id: insertResponse.insertedId,
+            id: insertResponse.insertedId.toString(),
             status: StatusCodes.CREATED
         }
     } else {
@@ -62,6 +62,55 @@ export async function createClass(db: Db, tokenRaw: string, userIdRaw: string, c
             id: null,
             status: StatusCodes.CREATED
         }
+    }
+}
+
+
+// Delete class
+export async function deleteClass(db: Db, tokenRaw: string, userIdRaw: string, classIdRaw: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let classId = new ObjectId(classIdRaw);
+
+    // Check if token is valid
+    if (!(await validToken(db, token, userId))) {
+        return {
+            success: false,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Check if user is teacher of class
+    let collection = db.collection("classes");
+    let findResponse = await collection.findOne({ _id: {$eq: classId} });
+
+    if (!findResponse) {
+        return {
+            success: false,
+            status: StatusCodes.NOT_FOUND
+        }
+    }
+
+    if (!userId.equals(findResponse.teacher)) {
+        return {
+            success: false,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Delete class
+    let deleteResponse = await collection.deleteOne({ _id: {$eq: classId} });
+    if (!deleteResponse.acknowledged) {
+        return {
+            success: false,
+            status: StatusCodes.INTERNAL_SERVER_ERROR
+        }
+    }
+
+    return {
+        success: true,
+        status: StatusCodes.OK
     }
 }
 
@@ -94,11 +143,12 @@ export async function getClassInfo(db: Db, tokenRaw: string, userIdRaw: string, 
 
     return {
         class: {
-            _id: response._id,
+            _id: response._id.toString(),
             className: response.className,
             teacher: response.teacher,
             students: response.students
-        }
+        },
+        status: StatusCodes.OK
     }
 }
 
@@ -292,7 +342,7 @@ export async function createNotice(db: Db, tokenRaw: string, userIdRaw: string, 
     }
 
     return {
-        id: noticeId,
+        id: noticeId.toString(),
         status: StatusCodes.CREATED
     }
 }
@@ -473,7 +523,7 @@ export async function createAssignment(db: Db, tokenRaw: string, userIdRaw: stri
     }
 
     return {
-        id: assignmentId,
+        id: assignmentId.toString(),
         status: StatusCodes.CREATED
     }
 }
