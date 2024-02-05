@@ -36,7 +36,7 @@ export async function login(db: Db, userName: string|null, email: string|null, p
 
     let token = await createToken(db, result._id);
     return {
-        token: token,
+        token: token.toString(),
         status: StatusCodes.CREATED
     };
 }
@@ -106,7 +106,7 @@ export async function createUser(db: Db, userName: string, realName: string, ema
     }
 
     return {
-        id: insertResult.insertedId,
+        id: insertResult.insertedId.toString(),
         status: StatusCodes.CREATED
     }
 }
@@ -180,7 +180,7 @@ export async function getUserInfo(db: Db, tokenRaw: string, userIdRaw: string, t
 
     return {
         user: {
-            id: result._id,
+            id: result._id.toString(),
             userName: result.userName,
             realName: result.realName,
             email: result.email,

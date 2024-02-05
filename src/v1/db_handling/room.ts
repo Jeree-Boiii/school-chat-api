@@ -37,7 +37,7 @@ export async function createRoom(db: Db, tokenRaw: string, userIdRaw: string, ro
     let result = await collection.insertOne(room);
     if (result.acknowledged) {
         return {
-            id: result.insertedId,
+            id: result.insertedId.toString(),
             status: StatusCodes.CREATED
         }
     } else {
@@ -126,7 +126,7 @@ export async function getRoomInfo(db: Db, tokenRaw: string, userIdRaw: string, r
 
     return {
         room: {
-            _id: result._id,
+            _id: result._id.toString(),
             roomName: result.roomName,
             owner: result.owner,
             members: result.allMembers
@@ -314,7 +314,7 @@ export async function removeUser(db: Db, tokenRaw: string, userIdRaw: string, ro
 
     // Check if target is already in room
     let targetIsUser = false;
-    findResult.allMembers.forEach((member) => {
+    findResult.allMembers.forEach((member: ObjectId) => {
         if (targetId.equals(member)) targetIsUser = true;
     })
     if (!targetIsUser) {
@@ -463,7 +463,7 @@ export async function createMessage(db: Db, tokenRaw: string, userIdRaw: string,
     let updateResult = await collection.updateOne({ _id: {$eq: roomId} }, { $push: {messages: message} });
     if (updateResult.acknowledged) {
         return {
-            id: messageId,
+            id: messageId.toString(),
             status: StatusCodes.CREATED
         }
     } else {
