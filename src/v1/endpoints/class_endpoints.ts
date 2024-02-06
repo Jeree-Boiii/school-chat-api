@@ -210,6 +210,39 @@ module.exports = function(app: Express, db: Db) {
     });
 
 
+    // GET: /classes/notices
+    // Get notices from class
+    // REQUIRES TOKEN
+    // --> token: string (valid ObjectId)
+    // --> userId: string (valid ObjectId)
+    // Parameters:
+    // --> classId: string (valid ObjectId)
+    app.get("/api/v1/classes/notices", async (req, res) => {
+        // Get + parse token
+        let rawToken = req.query.token?.toString();
+        if (!rawToken) {
+            res.status(StatusCodes.UNAUTHORIZED).send("ERROR: Token not provided");
+            return;
+        }
+
+        let { token, userId } = JSON.parse(rawToken);
+
+        // Get + parse parameters
+        let rawParams = req.query.params?.toString();
+        if (!rawParams) {
+            res.status(StatusCodes.NOT_ACCEPTABLE).send("ERROR: Parameters not provided");
+            return;
+        }
+
+        let { classId } = JSON.parse(rawParams);
+
+        // Remove new member from database
+        let response = await Class.getNotices(db, token, userId, classId);
+        res.status(response.status).send(response);
+        return;
+    });
+
+
     // DELETE: /classes/notices
     // Delete notice in class
     // REQUIRES TOKEN
@@ -292,7 +325,7 @@ module.exports = function(app: Express, db: Db) {
     // --> description: string
     // --> dueDate: Date
     // --> image: string | null
-    app.post("/api/v1/classes/notices", async (req, res) => {
+    app.post("/api/v1/classes/assignments", async (req, res) => {
         // Get + parse token
         let rawToken = req.query.token?.toString();
         if (!rawToken) {
@@ -313,6 +346,111 @@ module.exports = function(app: Express, db: Db) {
 
         // Remove new member from database
         let response = await Class.createAssignment(db, token, userId, classId, title, description, dueDate, image);
+        res.status(response.status).send(response);
+        return;
+    });
+
+
+    // GET: /classes/assignments
+    // Get assignments from class
+    // REQUIRES TOKEN
+    // --> token: string (valid ObjectId)
+    // --> userId: string (valid ObjectId)
+    // Parameters:
+    // --> classId: string (valid ObjectId)
+    app.get("/api/v1/classes/assignments", async (req, res) => {
+        // Get + parse token
+        let rawToken = req.query.token?.toString();
+        if (!rawToken) {
+            res.status(StatusCodes.UNAUTHORIZED).send("ERROR: Token not provided");
+            return;
+        }
+
+        let { token, userId } = JSON.parse(rawToken);
+
+        // Get + parse parameters
+        let rawParams = req.query.params?.toString();
+        if (!rawParams) {
+            res.status(StatusCodes.NOT_ACCEPTABLE).send("ERROR: Parameters not provided");
+            return;
+        }
+
+        let { classId } = JSON.parse(rawParams);
+
+        // Remove new member from database
+        let response = await Class.getAssignments(db, token, userId, classId);
+        res.status(response.status).send(response);
+        return;
+    });
+
+
+    // DELETE: /classes/assignments
+    // Delete assignment in class
+    // REQUIRES TOKEN
+    // --> token: string (valid ObjectId)
+    // --> userId: string (valid ObjectId)
+    // Parameters:
+    // --> classId: string (valid ObjectId)
+    // --> assignmentId: string (valid ObjectId)
+    app.delete("/api/v1/classes/assignments", async (req, res) => {
+        // Get + parse token
+        let rawToken = req.query.token?.toString();
+        if (!rawToken) {
+            res.status(StatusCodes.UNAUTHORIZED).send("ERROR: Token not provided");
+            return;
+        }
+
+        let { token, userId } = JSON.parse(rawToken);
+
+        // Get + parse parameters
+        let rawParams = req.query.params?.toString();
+        if (!rawParams) {
+            res.status(StatusCodes.NOT_ACCEPTABLE).send("ERROR: Parameters not provided");
+            return;
+        }
+
+        let { classId, assignmentId } = JSON.parse(rawParams);
+
+        // Remove new member from database
+        let response = await Class.deleteAssignment(db, token, userId, classId, assignmentId);
+        res.status(response.status).send(response);
+        return;
+    });
+
+
+    // POST: /classes/assignments/edit
+    // Edit assignment class
+    // REQUIRES TOKEN
+    // --> token: string (valid ObjectId)
+    // --> userId: string (valid ObjectId)
+    // Parameters:
+    // --> classId: string (valid ObjectId)
+    // --> assignmentId: string (valid ObjectId)
+    // --> title: string | null
+    // --> description: string | null
+    // --> dueDate: string | null
+    // --> image: string | null
+    app.post("/api/v1/classes/assignments/edit", async (req, res) => {
+        // Get + parse token
+        let rawToken = req.query.token?.toString();
+        if (!rawToken) {
+            res.status(StatusCodes.UNAUTHORIZED).send("ERROR: Token not provided");
+            return;
+        }
+
+        let { token, userId } = JSON.parse(rawToken);
+
+        // Get + parse parameters
+        let rawParams = req.query.params?.toString();
+        if (!rawParams) {
+            res.status(StatusCodes.NOT_ACCEPTABLE).send("ERROR: Parameters not provided");
+            return;
+        }
+
+        let { classId, assignmentId, title, description, dueDate, image } = JSON.parse(rawParams);
+
+        // Remove new member from database
+        let response = await Class.editAssignment(db, token, userId, classId, assignmentId, title, description, dueDate, image);
         res.status(response.status).send(response);
         return;
     });
