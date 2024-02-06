@@ -277,6 +277,39 @@ module.exports = function(app: Express, db: Db) {
     });
 
 
+    // GET: /rooms/messages
+    // Get all messages
+    // REQUIRES TOKEN
+    // --> token: string (valid ObjectId)
+    // --> userId: string (valid ObjectId)
+    // Parameters:
+    // --> roomId: string (valid ObjectId)
+    app.get("/api/v1/rooms/messages", async (req, res) => {
+        // Get + parse token
+        let rawToken = req.query.token?.toString();
+        if (!rawToken) {
+            res.status(StatusCodes.UNAUTHORIZED).send("ERROR: Token not provided");
+            return;
+        }
+
+        let { token, userId } = JSON.parse(rawToken);
+
+        // Get + parse parameters
+        let rawParams = req.query.params?.toString();
+        if (!rawParams) {
+            res.status(StatusCodes.NOT_ACCEPTABLE).send("ERROR: Parameters not provided");
+            return;
+        }
+
+        let { roomId } = JSON.parse(rawParams);
+
+        // Add new message to database
+        let response = await Room.getMessages(db, token, userId, roomId);
+        res.status(response.status).send(response);
+        return;
+    });
+
+
     // POST: /rooms/messages/edit
     // Edit a message
     // REQUIRES TOKEN
