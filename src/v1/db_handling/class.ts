@@ -348,6 +348,56 @@ export async function createNotice(db: Db, tokenRaw: string, userIdRaw: string, 
 }
 
 
+// Get notices
+export async function getNotices(db: Db, tokenRaw: string, userIdRaw: string, classIdRaw: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let classId = new ObjectId(classIdRaw);
+
+    // Check if token is valid
+    if (!(await validToken(db, token, userId))) {
+        return {
+            notices: null,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Check if user is teacher/student of class
+    let collection = db.collection("classes");
+    let findResponse = await collection.findOne({_id: {$eq: classId}});
+
+    if (!findResponse) {
+        return {
+            notices: null,
+            status: StatusCodes.NOT_FOUND
+        }
+    }
+
+    if (!userId.equals(findResponse.teacher)) {
+        let isStudent = false;
+        for (let i=0; i<findResponse.students.length; i++) {
+            if (userId.equals(findResponse.students[i])) {
+                isStudent = true;
+                break;
+            }
+        }
+
+        if (!isStudent) {
+            return {
+                notices: null,
+                status: StatusCodes.UNAUTHORIZED
+            }
+        }
+    }
+
+    return {
+        notices: findResponse.notices,
+        status: StatusCodes.OK
+    }
+}
+
+
 // Edit notice
 export async function editNotice(db: Db, tokenRaw: string, userIdRaw: string, classIdRaw: string, noticeIdRaw: string, newTitle: string|null, newDescription: string|null, newImage: string|null) {
     // Convert strings to ObjectIds
@@ -604,6 +654,56 @@ export async function editAssignment(db: Db, tokenRaw: string, userIdRaw: string
 
     return {
         success: true,
+        status: StatusCodes.OK
+    }
+}
+
+
+// Get assignments
+export async function getAssignments(db: Db, tokenRaw: string, userIdRaw: string, classIdRaw: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let classId = new ObjectId(classIdRaw);
+
+    // Check if token is valid
+    if (!(await validToken(db, token, userId))) {
+        return {
+            assignments: null,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Check if user is teacher/student of class
+    let collection = db.collection("classes");
+    let findResponse = await collection.findOne({_id: {$eq: classId}});
+
+    if (!findResponse) {
+        return {
+            assignments: null,
+            status: StatusCodes.NOT_FOUND
+        }
+    }
+
+    if (!userId.equals(findResponse.teacher)) {
+        let isStudent = false;
+        for (let i=0; i<findResponse.students.length; i++) {
+            if (userId.equals(findResponse.students[i])) {
+                isStudent = true;
+                break;
+            }
+        }
+
+        if (!isStudent) {
+            return {
+                assignments: null,
+                status: StatusCodes.UNAUTHORIZED
+            }
+        }
+    }
+
+    return {
+        notices: findResponse.notices,
         status: StatusCodes.OK
     }
 }
