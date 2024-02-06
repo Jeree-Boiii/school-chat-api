@@ -12,6 +12,7 @@ const db = DbHandler.connect("mongodb://localhost:27017/");
 // Include endpoints
 require("./endpoints/user_endpoints")(app, db);
 require("./endpoints/room_endpoints")(app, db);
+require("./endpoints/class_endpoints")(app, db);
 
 
 // Initialise server
