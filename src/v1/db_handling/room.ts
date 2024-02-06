@@ -475,6 +475,55 @@ export async function createMessage(db: Db, tokenRaw: string, userIdRaw: string,
 }
 
 
+// Get messages
+export async function getMessages(db: Db, tokenRaw: string, userIdRaw: string, roomIdRaw: string) {
+    // Convert strings to ObjectIds
+    let token = new ObjectId(tokenRaw);
+    let userId = new ObjectId(userIdRaw);
+    let roomId = new ObjectId(roomIdRaw);
+
+    // Check if token is valid
+    if (!(await validToken(db, token, userId))) {
+        return {
+            messages: null,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    // Check if room exists
+    let collection = db.collection("rooms");
+
+    let findResult = await collection.findOne({ _id: {$eq: roomId} });
+    if (!findResult) {
+        return {
+            messages: null,
+            status: StatusCodes.NOT_FOUND
+        }
+    }
+
+    // Check if user is member of room
+    let isMember = false;
+    for (let i=0; i<findResult.allMembers.length; i++) {
+        if (userId.equals(findResult.allMembers[i])) {
+            isMember = true;
+            break;
+        }
+    }
+
+    if (!isMember) {
+        return {
+            messages: null,
+            status: StatusCodes.UNAUTHORIZED
+        }
+    }
+
+    return {
+        messages: findResult.messages,
+        status: StatusCodes.OK
+    }
+}
+
+
 // Edit message
 export async function editMessage(db: Db, tokenRaw: string, userIdRaw: string, roomIdRaw: string, messageIdRaw: string, newContents: ObjectId) {
     // Convert strings to ObjectIds
