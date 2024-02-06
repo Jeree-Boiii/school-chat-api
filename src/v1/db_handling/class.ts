@@ -534,7 +534,7 @@ export async function createAssignment(db: Db, tokenRaw: string, userIdRaw: stri
 
 
 // Edit assignment
-export async function editAssignment(db: Db, tokenRaw: string, userIdRaw: string, classIdRaw: string, assignmentIdRaw: string, field: string, value: string|Date|null) {
+export async function editAssignment(db: Db, tokenRaw: string, userIdRaw: string, classIdRaw: string, assignmentIdRaw: string, newTitle: string|null, newDescription: string|null, newDueDate: Date|null, newImage: string|null) {
     // Convert strings to ObjectIds
     let token = new ObjectId(tokenRaw);
     let userId = new ObjectId(userIdRaw);
@@ -584,9 +584,16 @@ export async function editAssignment(db: Db, tokenRaw: string, userIdRaw: string
         }
     }
 
+
+
     // Edit assignment
-    let fieldStr = `assignments.${assignmentIndex}.${field}`
-    let updateResponse = await collection.updateOne({ _id: {$eq: classId} }, { $set: {[fieldStr]: value} });
+    let updateParams: {[index: string]: any} = {};
+    if (newTitle) updateParams[`assignments.${assignmentIndex}.title`] = newTitle;
+    if (newDescription) updateParams[`assignments.${assignmentIndex}.description`] = newDescription;
+    if (newDueDate) updateParams[`assignments.${assignmentIndex}.dueDate`] = newDueDate;
+    if (newImage) updateParams[`assignments.${assignmentIndex}.title`] = newImage;
+
+    let updateResponse = await collection.updateOne({ _id: {$eq: classId} }, { $set: updateParams });
 
     if (!updateResponse.acknowledged) {
         return {
